@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShipWise Commerce</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        header {
+            background-color: #1c1d26; /* ロゴ背景色に変更 */
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header img {
+            height: 50px; /* ロゴの高さを調整 */
+        }
+        header .icons {
+            display: flex;
+            gap: 15px;
+        }
+        header .icons i {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ccc;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 3px solid #4CAF50;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        input, select, button, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .popup {
+            position: absolute;
+            right: 10px;
+            top: 50px;
+            background-color: white;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        #map {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+        }
+        .dark-mode {
+            background-color: #1e1e1e;
+            color: #f0f0f0;
+        }
+        .dark-mode header {
+            background-color: #333;
+        }
+        .dark-mode .container {
+            background-color: #2b2b2b;
+        }
+        .dark-mode input, .dark-mode select, .dark-mode textarea {
+            background-color: #444;
+            color: #fff;
+            border: 1px solid #555;
+        }
+        .toggle-dark-mode {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 30px;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+ <img src="img/ShipWise_logo.png" alt="ShipWise Commerce Logo"> <!-- ロゴ画像を相対パスで呼び出し -->
+       <div class="icons">
+        <a href="mypage.html"><i class="fas fa-user-circle"></i></a> <!-- マイページへの遷移 -->
+        <i class="fas fa-bell" onclick="togglePopup('notifications')"></i>
+        <i class="fas fa-tasks" onclick="togglePopup('todo')"></i>
+    </div>
+</header>
+
+<div class="container">
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('productTab')">商品出品</div>
+        <div class="tab" onclick="switchTab('deliveryTab')">配送サービス</div>
+    </div>
+
+    <!-- 商品出品タブ -->
+    <div id="productTab" class="tab-content active">
+        <h2>商品出品</h2>
+        <form id="productForm">
+            <label for="productName">商品名:</label>
+            <input type="text" id="productName" name="productName" placeholder="商品名を入力">
+
+            <label for="productPrice">価格 (SOL):</label>
+            <input type="number" id="productPrice" name="productPrice" placeholder="価格を入力">
+
+            <label for="productDescription">商品説明:</label>
+            <textarea id="productDescription" name="productDescription" placeholder="商品の説明を入力" rows="4"></textarea>
+
+            <label for="productImage">画像アップロード:</label>
+            <input type="file" id="productImage" name="productImage" accept="image/*" capture="camera">
+
+            <button type="button" onclick="listProduct()">商品を出品する</button>
+        </form>
+    </div>
+
+    <!-- 配送サービスタブ -->
+    <div id="deliveryTab" class="tab-content">
+        <h2>配送サービス</h2>
+        <form id="deliveryForm">
+            <label for="deliveryName">名前:</label>
+            <input type="text" id="deliveryName" name="deliveryName" placeholder="名前を入力">
+
+            <label for="deliveryRegion">配送エリア:</label>
+            <input type="text" id="deliveryRegion" name="deliveryRegion" placeholder="配送可能エリアを入力">
+
+            <button type="button" onclick="registerDelivery()">配送サービスを登録する</button>
+        </form>
+
+        <!-- Googleマップ -->
+        <div id="map"></div>
+    </div>
+
+    <div id="output"></div>
+</div>
+
+<div id="notifications" class="popup">
+    <h3>通知</h3>
+    <ul>
+        <li>商品が売れました！</li>
+        <li>配送リクエストがあります。</li>
+    </ul>
+</div>
+
+<div id="todo" class="popup">
+    <h3>TODOリスト</h3>
+    <ul>
+        <li>商品Aの発送</li>
+        <li>商品の登録</li>
+    </ul>
+</div>
+
+<!-- ダークモード切り替えアイコン -->
+<div class="toggle-dark-mode" id="darkModeToggle">
+    <i class="fas fa-moon"></i>
+</div>
+
+<script>
+    // タブの切り替え
+    function switchTab(tabId) {
+        const tabs = document.getElementsByClassName('tab');
+        const contents = document.getElementsByClassName('tab-content');
+        
+        for (let i = 0; i < tabs.length; i++) {
+            tabs[i].classList.remove('active');
+            contents[i].classList.remove('active');
+        }
+
+        document.getElementById(tabId).classList.add('active');
+        document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    }
+
+    // 商品出品
+    function listProduct() {
+        const name = document.getElementById('productName').value;
+        const price = document.getElementById('productPrice').value;
+        const description = document.getElementById('productDescription').value;
+        const image = document.getElementById('productImage').files[0];
+
+        if (name && price && description && image) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const productOutput = `
+                    <h3>出品された商品</h3>
+                    <p><strong>商品名:</strong> ${name}</p>
+                    <p><strong>価格:</strong> ${price} SOL</p>
+                    <p><strong>商品説明:</strong> ${description}</p>
+                    <img src="${e.target.result}" alt="Product Image" style="width: 100px; height: 100px;">
+                `;
+                document.getElementById('output').innerHTML = productOutput;
+            };
+            reader.readAsDataURL(image);
+        } else {
+            alert('全てのフィールドを入力してください。');
+        }
+    }
+
+    // 配送サービス登録
+    function registerDelivery() {
+        const name = document.getElementById('deliveryName').value;
+        const region = document.getElementById('deliveryRegion').value;
+
+        if (name && region) {
+            const deliveryOutput = `
+                <h3>登録された配送サービス</h3>
+                <p><strong>名前:</strong> ${name}</p>
+                <p><strong>配送エリア:</strong> ${region}</p>
+            `;
+            document.getElementById('output').innerHTML = deliveryOutput;
+
+            // Googleマップを表示
+            initMap();
+        } else {
+            alert('全てのフィールドを入力してください。');
+        }
+    }
+
+    // Googleマップの初期化
+    function initMap() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: lat, lng: lng },
+                    zoom: 14
+                });
+                const marker = new google.maps.Marker({
+                    position: { lat: lat, lng: lng },
+                    map: map,
+                    title: '現在地'
+                });
+            });
+        } else {
+            alert("位置情報が利用できません。");
+        }
+    }
+
+    // ポップアップの表示切り替え
+    function togglePopup(popupId) {
+        const popup = document.getElementById(popupId);
+        popup.style.display = (popup.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // ダークモード切り替え
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    darkModeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const icon = darkModeToggle.querySelector('i');
+        if (document.body.classList.contains('dark-mode')) {
+            icon.classList.replace('fa-moon', 'fa-sun');
+        } else {
+            icon.classList.replace('fa-sun', 'fa-moon');
+        }
+    });
+
+    // ポップアップを閉じる処理
+    window.onclick = function (event) {
+        if (!event.target.matches('.icons i')) {
+            document.getElementById('notifications').style.display = 'none';
+            document.getElementById('todo').style.display = 'none';
+        }
+    };
+</script>
+<!-- Google Maps API -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
+
+</body>
+</html>
